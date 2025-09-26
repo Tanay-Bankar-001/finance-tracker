@@ -15,5 +15,16 @@ router.post('/add', async (req, res) => {
   }
 });
 
+// Get all transactions for a user
+router.get('/user/:userId', async (req, res) => {
+  try {
+    const transactions = await Transaction.find({ user: req.params.userId });
+    res.json(transactions);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
 //Export the Router
 module.exports = router;
