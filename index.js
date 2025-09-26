@@ -13,6 +13,11 @@ mongoose.connect(process.env.MONGODB_URI, {
 const express = require('express'); //import express library
 const app = express();  //create express app (server)
 
+const transactionRoutes = require('./routes/transactionRoutes');
+app.use(express.json()); // To parse JSON bodies
+app.use('/api/transactions', transactionRoutes);
+
+
 //check if server is active at http://localhost:3000/
 app.get('/', (req, res) => {
   res.send('Expense Tracker Backend is running!');
