@@ -23,7 +23,10 @@ app.use(express.json());
 
 // Add API routes
 const transactionRoutes = require('./routes/transactionRoutes');
+const accountRoutes = require('./routes/accountRoutes'); // NEW LINE
+
 app.use('/api/transactions', transactionRoutes);
+app.use('/api/accounts', accountRoutes); // NEW LINE
 
 // Quick health check route
 app.get('/', (req, res) => {
