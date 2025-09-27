@@ -1,7 +1,8 @@
-//connecting mongoDB
+// Load environment variables
 require('dotenv').config();
-const mongoose = require('mongoose');
 
+// Connect to MongoDB
+const mongoose = require('mongoose');
 mongoose.connect(process.env.MONGODB_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
@@ -9,24 +10,28 @@ mongoose.connect(process.env.MONGODB_URI, {
 .then(() => console.log('Connected to MongoDB Atlas!'))
 .catch((err) => console.error('MongoDB connection error:', err));
 
+// Setup Express server
+const express = require('express');
+const cors = require('cors');
+const app = express();
 
-const express = require('express'); //import express library
-const app = express();  //create express app (server)
+// Enable CORS for all requests
+app.use(cors());
 
+// Enable JSON body parsing
+app.use(express.json());
+
+// Add API routes
 const transactionRoutes = require('./routes/transactionRoutes');
-app.use(express.json()); // To parse JSON bodies
 app.use('/api/transactions', transactionRoutes);
 
-
-//check if server is active at http://localhost:3000/
+// Quick health check route
 app.get('/', (req, res) => {
   res.send('Expense Tracker Backend is running!');
 });
 
-//server listens requests on port 3000
+// Start server
 const PORT = 3000;
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
-
-

@@ -20,6 +20,9 @@ const transactionSchema = new mongoose.Schema({
   remarks: {
     type: String // Any notes or description
   },
+  payee: {
+    type: String 
+  },
   from: {
     type: String // for income
   },
