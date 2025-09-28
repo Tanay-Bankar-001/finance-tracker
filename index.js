@@ -22,7 +22,7 @@ app.use(cors());
 app.use(express.json());
 
 // Add API routes
-const transactionRoutes = require('./routes/TransactionRoutes');
+const transactionRoutes = require('./routes/transactionRoutes');
 const accountRoutes = require('./routes/AccountRoutes');
 
 app.use('/api/transactions', transactionRoutes);
