@@ -22,46 +22,264 @@ router.get('/user/:userId', async (req, res) => {
   }
 });
 
-/* ADVANCED SEARCH/FILTER */
+/* ENHANCED GLOBAL SEARCH WITH ADVANCED FILTERS */
 router.get('/search/:userId', async (req, res) => {
   try {
     const { 
-      search, category, type, mode, payee,
-      startDate, endDate, minAmount, maxAmount 
+      search, category, expenseType, type, mode, payee,
+      startDate, endDate, minAmount, maxAmount,
+      needsWants, limit = 100
     } = req.query;
     
     let query = { user: req.params.userId };
     
-    // Text search across payee and remarks
-    if (search) {
+    // Text search across payee, remarks, and expenseType
+    if (search && search.trim()) {
       query.$or = [
-        { payee: { $regex: search, $options: 'i' } },
-        { remarks: { $regex: search, $options: 'i' } }
+        { payee: { $regex: search.trim(), $options: 'i' } },
+        { remarks: { $regex: search.trim(), $options: 'i' } },
+        { expenseType: { $regex: search.trim(), $options: 'i' } }
       ];
     }
     
     // Exact matches
     if (category) query.category = category;
+    if (expenseType) query.expenseType = expenseType;
     if (type) query.type = type;
-    if (mode) query.mode = mode;
-    if (payee) query.payee = { $regex: payee, $options: 'i' };
+    if (mode) query.mode = { $regex: mode, $options: 'i' };
+    if (payee && !search) query.payee = { $regex: payee, $options: 'i' };
+    if (needsWants) query.needsWants = needsWants;
     
-    // Date range
+    // Date range filtering
     if (startDate || endDate) {
       query.date = {};
       if (startDate) query.date.$gte = new Date(startDate);
-      if (endDate) query.date.$lte = new Date(endDate);
+      if (endDate) {
+        const endDateTime = new Date(endDate);
+        endDateTime.setHours(23, 59, 59, 999); // End of day
+        query.date.$lte = endDateTime;
+      }
     }
     
-    // Amount range
+    // Amount range filtering
     if (minAmount || maxAmount) {
       query.amount = {};
       if (minAmount) query.amount.$gte = Number(minAmount);
       if (maxAmount) query.amount.$lte = Number(maxAmount);
     }
     
-    const transactions = await Transaction.find(query).sort({ date: -1 });
-    res.json(transactions);
+    // Execute search with sorting and limits
+    const transactions = await Transaction
+      .find(query)
+      .sort({ date: -1 }) // Most recent first
+      .limit(Number(limit));
+    
+    // Calculate summary for search results
+    const totalExpenses = transactions.reduce((sum, t) => {
+      return sum + (t.type === 'expense' || t.type === 'saved' || t.type === 'credit_card_payment' ? t.amount : 0);
+    }, 0);
+    
+    const totalIncome = transactions.reduce((sum, t) => {
+      return sum + (t.type === 'income' ? t.amount : 0);
+    }, 0);
+    
+    // Category breakdown
+    const categoryBreakdown = {};
+    const typeBreakdown = {};
+    
+    transactions.forEach(t => {
+      if (t.expenseType) {
+        categoryBreakdown[t.expenseType] = (categoryBreakdown[t.expenseType] || 0) + t.amount;
+      }
+      typeBreakdown[t.type] = (typeBreakdown[t.type] || 0) + t.amount;
+    });
+    
+    res.json({
+      transactions,
+      count: transactions.length,
+      totalExpenses,
+      totalIncome,
+      netAmount: totalIncome - totalExpenses,
+      categoryBreakdown,
+      typeBreakdown,
+      searchQuery: req.query,
+      dateRange: {
+        earliest: transactions.length ? transactions[transactions.length - 1].date : null,
+        latest: transactions.length ? transactions[0].date : null
+      }
+    });
+    
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/* QUICK FILTER: Recent transactions */
+router.get('/recent/:userId', async (req, res) => {
+  try {
+    const { days = 30 } = req.query;
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - Number(days));
+    
+    const transactions = await Transaction
+      .find({
+        user: req.params.userId,
+        date: { $gte: startDate }
+      })
+      .sort({ date: -1 })
+      .limit(50);
+    
+    // Calculate totals
+    const totalExpenses = transactions.reduce((sum, t) => {
+      return sum + (t.type === 'expense' || t.type === 'saved' || t.type === 'credit_card_payment' ? t.amount : 0);
+    }, 0);
+    
+    const totalIncome = transactions.reduce((sum, t) => {
+      return sum + (t.type === 'income' ? t.amount : 0);
+    }, 0);
+    
+    res.json({
+      transactions,
+      count: transactions.length,
+      totalExpenses,
+      totalIncome,
+      period: `Last ${days} days`
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/* QUICK FILTER: Category search */
+router.get('/category/:userId/:category', async (req, res) => {
+  try {
+    const { category } = req.params;
+    const { limit = 50 } = req.query;
+    
+    const transactions = await Transaction
+      .find({
+        user: req.params.userId,
+        $or: [
+          { category: category },
+          { expenseType: category },
+          { needsWants: category }
+        ]
+      })
+      .sort({ date: -1 })
+      .limit(Number(limit));
+    
+    // Calculate totals
+    const totalAmount = transactions.reduce((sum, t) => sum + t.amount, 0);
+    
+    res.json({
+      transactions,
+      count: transactions.length,
+      totalAmount,
+      category: category
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/* SEARCH SUGGESTIONS: Get unique values for autocomplete */
+router.get('/suggestions/:userId', async (req, res) => {
+  try {
+    const { field } = req.query; // payee, expenseType, mode, etc.
+    
+    let pipeline = [
+      { $match: { user: new require('mongoose').Types.ObjectId(req.params.userId) } }
+    ];
+    
+    if (field === 'payee') {
+      pipeline.push(
+        { $group: { _id: '$payee', count: { $sum: 1 } } },
+        { $sort: { count: -1 } },
+        { $limit: 20 }
+      );
+    } else if (field === 'expenseType') {
+      pipeline.push(
+        { $group: { _id: '$expenseType', count: { $sum: 1 } } },
+        { $match: { _id: { $ne: null } } },
+        { $sort: { count: -1 } },
+        { $limit: 15 }
+      );
+    } else if (field === 'mode') {
+      pipeline.push(
+        { $group: { _id: '$mode', count: { $sum: 1 } } },
+        { $match: { _id: { $ne: null } } },
+        { $sort: { count: -1 } },
+        { $limit: 15 }
+      );
+    }
+    
+    const results = await Transaction.aggregate(pipeline);
+    const suggestions = results.map(r => r._id).filter(Boolean);
+    
+    res.json(suggestions);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/* ANALYTICS: Spending trends */
+router.get('/analytics/:userId', async (req, res) => {
+  try {
+    const { months = 6 } = req.query;
+    const endDate = new Date();
+    const startDate = new Date();
+    startDate.setMonth(startDate.getMonth() - Number(months));
+    
+    const pipeline = [
+      {
+        $match: {
+          user: new require('mongoose').Types.ObjectId(req.params.userId),
+          date: { $gte: startDate, $lte: endDate }
+        }
+      },
+      {
+        $group: {
+          _id: {
+            year: { $year: '$date' },
+            month: { $month: '$date' },
+            type: '$type'
+          },
+          totalAmount: { $sum: '$amount' },
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { '_id.year': 1, '_id.month': 1 } }
+    ];
+    
+    const trends = await Transaction.aggregate(pipeline);
+    
+    // Category-wise spending
+    const categoryPipeline = [
+      {
+        $match: {
+          user: new require('mongoose').Types.ObjectId(req.params.userId),
+          type: { $in: ['expense', 'saved', 'credit_card_payment'] },
+          date: { $gte: startDate, $lte: endDate }
+        }
+      },
+      {
+        $group: {
+          _id: '$expenseType',
+          totalAmount: { $sum: '$amount' },
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { totalAmount: -1 } },
+      { $limit: 10 }
+    ];
+    
+    const categorySpending = await Transaction.aggregate(categoryPipeline);
+    
+    res.json({
+      trends,
+      categorySpending,
+      period: `Last ${months} months`
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
