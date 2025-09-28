@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import './Dashboard.css';
 import axios from 'axios';
+import './Dashboard.css';
 
 const userId = '68d669f0d712f627d829c474';
 
@@ -22,7 +22,7 @@ const initialFormState = {
 };
 
 function Dashboard() {
-  // State management (existing + new)
+  // State management
   const [month, setMonth] = useState(initialMonth);
   const [year, setYear] = useState(initialYear);
   
@@ -50,7 +50,7 @@ function Dashboard() {
   const [quickSearchResults, setQuickSearchResults] = useState([]);
   const [showQuickResults, setShowQuickResults] = useState(false);
 
-  // Enhanced categories matching your CSV
+  // Data arrays
   const [expenseTypes] = useState([
     "Food", "Essentials", "Travel", "Investment", "Entertainment", "Laundry", "Saved", "Fund Transfer"
   ]);
@@ -64,7 +64,7 @@ function Dashboard() {
     "Coral GPay CC", "MMT Mastercard", "Coral Paytm CC", "Debit Card"
   ]);
 
-  // Helper functions (existing ones)
+  // Helper functions
   const getMonthYearString = (m, y) => `${y}-${m.toString().padStart(2, '0')}`;
   
   const fetchAccount = async (selectedMonth = month, selectedYear = year) => {
@@ -99,7 +99,7 @@ function Dashboard() {
     fetchAccount();
   }, [month, year]);
 
-  // Navigation functions (existing)
+  // Navigation functions
   const goToPreviousMonth = () => {
     if (month === 1) {
       setMonth(12);
@@ -222,7 +222,7 @@ function Dashboard() {
     setEditForm({});
   };
 
-  // IMPROVED DELETE HANDLER - Double Click Confirmation
+  // Delete handler
   const handleDelete = async (id) => {
     const currentCount = deleteClickCount[id] || 0;
     
@@ -273,25 +273,17 @@ function Dashboard() {
   const renderGoalProgress = (goal, label, color) => {
     const percentage = goal.target > 0 ? (goal.amount / goal.target) * 100 : 0;
     return (
-      <div style={{ marginBottom: '12px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9em', marginBottom: '4px' }}>
-          <span style={{ fontWeight: '500' }}>{label}</span>
+      <div className="goal-progress">
+        <div className="goal-header">
+          <span className="goal-label">{label}</span>
           <span>₹{goal.amount} / ₹{goal.target.toFixed(0)} ({percentage.toFixed(1)}%)</span>
         </div>
-        <div style={{ 
-          width: '100%', 
-          backgroundColor: '#e2e8f0', 
-          borderRadius: '8px', 
-          height: '8px',
-          overflow: 'hidden'
-        }}>
+        <div className="goal-bar-container">
           <div 
+            className="goal-bar"
             style={{ 
               width: `${Math.min(percentage, 100)}%`, 
-              backgroundColor: color, 
-              height: '100%', 
-              borderRadius: '8px',
-              transition: 'width 0.3s ease'
+              backgroundColor: color
             }}
           />
         </div>
@@ -299,218 +291,84 @@ function Dashboard() {
     );
   };
 
-  if (loading) return (
-    <div style={{ 
-      textAlign: 'center', 
-      padding: '50px',
-      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
-    }}>
-      <div style={{ 
-        display: 'inline-block',
-        width: '40px',
-        height: '40px',
-        border: '4px solid #f3f4f6',
-        borderTop: '4px solid #3b82f6',
-        borderRadius: '50%',
-        animation: 'spin 1s linear infinite',
-        marginBottom: '20px'
-      }}></div>
-      <div>Loading your data...</div>
-      <style>{`
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-      `}</style>
-    </div>
-  );
+  if (loading) {
+    return (
+      <div className="loading-container">
+        <div className="loading-spinner"></div>
+        <div>Loading your data...</div>
+      </div>
+    );
+  }
 
-  if (!summary) return <div style={{ textAlign: 'center', padding: '50px' }}>No data.</div>;
+  if (!summary) return <div className="empty-state">No data.</div>;
 
   return (
-    <div style={{ 
-      maxWidth: '1400px', 
-      margin: '0 auto', 
-      padding: '20px',
-      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-      background: '#f8fafc',
-      minHeight: '100vh'
-    }}>
+    <div className="dashboard-container">
       
       {/* Header */}
-      <div style={{ 
-        textAlign: 'center', 
-        marginBottom: '25px',
-        background: 'white',
-        padding: '25px',
-        borderRadius: '12px',
-        boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
-      }}>
-        <h1 style={{ 
-          margin: '0 0 8px 0', 
-          color: '#1f2937',
-          fontSize: '2.5em',
-          fontWeight: '700'
-        }}>
-          💰 Budget Tracker
-        </h1>
-        <h2 style={{ 
-          margin: '0', 
-          color: '#6b7280',
-          fontSize: '1.4em',
-          fontWeight: '400'
-        }}>
-          {getMonthName(month)} {year}
-        </h2>
+      <div className="dashboard-header">
+        <h1 className="dashboard-title">💰 Budget Tracker</h1>
+        <h2 className="dashboard-subtitle">{getMonthName(month)} {year}</h2>
       </div>
 
       {/* Month Navigation */}
-      <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', marginBottom: '25px' }}>
-        <button 
-          onClick={goToPreviousMonth} 
-          style={{ 
-            padding: '10px 20px',
-            backgroundColor: '#3b82f6',
-            color: 'white',
-            border: 'none',
-            borderRadius: '8px',
-            cursor: 'pointer',
-            fontSize: '0.95em',
-            fontWeight: '500',
-            transition: 'background-color 0.2s'
-          }}
-          onMouseOver={(e) => e.target.style.backgroundColor = '#2563eb'}
-          onMouseOut={(e) => e.target.style.backgroundColor = '#3b82f6'}
-        >
+      <div className="nav-buttons">
+        <button className="nav-button primary" onClick={goToPreviousMonth}>
           ← Previous
         </button>
-        <button 
-          onClick={goToCurrentMonth} 
-          style={{ 
-            padding: '10px 20px',
-            backgroundColor: '#10b981',
-            color: 'white',
-            border: 'none',
-            borderRadius: '8px',
-            cursor: 'pointer',
-            fontSize: '0.95em',
-            fontWeight: '500',
-            transition: 'background-color 0.2s'
-          }}
-          onMouseOver={(e) => e.target.style.backgroundColor = '#059669'}
-          onMouseOut={(e) => e.target.style.backgroundColor = '#10b981'}
-        >
+        <button className="nav-button success" onClick={goToCurrentMonth}>
           Current Month
         </button>
-        <button 
-          onClick={goToNextMonth} 
-          style={{ 
-            padding: '10px 20px',
-            backgroundColor: '#3b82f6',
-            color: 'white',
-            border: 'none',
-            borderRadius: '8px',
-            cursor: 'pointer',
-            fontSize: '0.95em',
-            fontWeight: '500',
-            transition: 'background-color 0.2s'
-          }}
-          onMouseOver={(e) => e.target.style.backgroundColor = '#2563eb'}
-          onMouseOut={(e) => e.target.style.backgroundColor = '#3b82f6'}
-        >
+        <button className="nav-button primary" onClick={goToNextMonth}>
           Next →
         </button>
       </div>
 
       {/* Quick Search Bar */}
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'center', 
-        marginBottom: '25px',
-        position: 'relative'
-      }}>
-        <div style={{ position: 'relative', width: '100%', maxWidth: '500px' }}>
+      <div className="search-container">
+        <div className="search-wrapper">
           <input
-  type="text"
-  className="search-input"
-  placeholder="🔍 Quick search transactions... (payee, remarks, category)"
-  value={quickSearch}
-  onChange={(e) => handleQuickSearch(e.target.value)}
-  onBlur={() => setTimeout(() => setShowQuickResults(false), 200)}
-  onFocus={() => quickSearch.length >= 2 && setShowQuickResults(true)}
-/>
-
+            type="text"
+            className="search-input"
+            placeholder="🔍 Quick search transactions... (payee, remarks, category)"
+            value={quickSearch}
+            onChange={(e) => handleQuickSearch(e.target.value)}
+            onBlur={() => setTimeout(() => setShowQuickResults(false), 200)}
+            onFocus={() => quickSearch.length >= 2 && setShowQuickResults(true)}
+          />
           
           {/* Quick Search Results Dropdown */}
           {showQuickResults && quickSearchResults.length > 0 && (
-            <div style={{
-              position: 'absolute',
-              top: '100%',
-              left: '0',
-              right: '0',
-              background: 'white',
-              border: '1px solid #e5e7eb',
-              borderRadius: '12px',
-              boxShadow: '0 10px 25px rgba(0, 0, 0, 0.15)',
-              zIndex: 1000,
-              maxHeight: '300px',
-              overflowY: 'auto',
-              marginTop: '5px'
-            }}>
-              <div style={{ padding: '12px 16px', borderBottom: '1px solid #f3f4f6', fontSize: '0.85em', color: '#6b7280', fontWeight: '500' }}>
+            <div className="search-dropdown">
+              <div className="search-dropdown-header">
                 Recent matches ({quickSearchResults.length})
               </div>
               {quickSearchResults.map(txn => (
                 <div 
                   key={txn._id}
-                  style={{
-                    padding: '12px 16px',
-                    borderBottom: '1px solid #f9fafb',
-                    cursor: 'pointer',
-                    transition: 'background-color 0.2s ease',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center'
-                  }}
-                  onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#f8fafc'}
-                  onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                  className="search-result-item"
                   onClick={() => {
                     setQuickSearch('');
                     setShowQuickResults(false);
                   }}
                 >
                   <div>
-                    <div style={{ fontWeight: '500', marginBottom: '2px' }}>
-                      {txn.payee}
-                    </div>
-                    <div style={{ fontSize: '0.8em', color: '#6b7280' }}>
+                    <div className="search-result-main">{txn.payee}</div>
+                    <div className="search-result-details">
                       {new Date(txn.date).toLocaleDateString()} • {txn.expenseType || txn.type}
                       {txn.remarks && ` • ${txn.remarks.slice(0, 30)}${txn.remarks.length > 30 ? '...' : ''}`}
                     </div>
                   </div>
-                  <div style={{ 
-                    fontWeight: '600', 
-                    color: txn.type === 'income' ? '#10b981' : '#ef4444' 
-                  }}>
+                  <div className={`search-result-amount ${txn.type === 'income' ? 'income' : 'expense'}`}>
                     ₹{txn.amount}
                   </div>
                 </div>
               ))}
-              <div style={{ 
-                padding: '10px 16px', 
-                textAlign: 'center',
-                background: '#f8fafc',
-                borderBottomLeftRadius: '12px',
-                borderBottomRightRadius: '12px'
-              }}>
+              <div className="search-dropdown-footer">
                 <button
+                  className="search-advanced-link"
                   onClick={() => {
                     window.dispatchEvent(new CustomEvent('navigate-to-search', { detail: quickSearch }));
-                  }}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    color: '#3b82f6',
-                    fontSize: '0.85em',
-                    cursor: 'pointer',
-                    fontWeight: '500'
                   }}
                 >
                   See all results in Advanced Search →
@@ -522,110 +380,52 @@ function Dashboard() {
       </div>
 
       {/* Summary Section */}
-      <div style={{ 
-        display: 'grid', 
-        gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', 
-        gap: '16px', 
-        marginBottom: '25px'
-      }}>
+      <div className="summary-grid">
         {account && (
           <>
-            <div style={{
-              background: 'white',
-              padding: '20px',
-              borderRadius: '12px',
-              boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
-              borderLeft: '4px solid #8b5cf6'
-            }}>
-              <div style={{ fontSize: '0.85em', color: '#6b7280', marginBottom: '4px' }}>Opening Balance</div>
-              <div style={{ fontSize: '1.8em', fontWeight: '700', color: '#1f2937' }}>₹{account.startingBalance}</div>
+            <div className="summary-card purple">
+              <div className="summary-label">Opening Balance</div>
+              <div className="summary-value">₹{account.startingBalance}</div>
             </div>
-            <div style={{
-              background: 'white',
-              padding: '20px',
-              borderRadius: '12px',
-              boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
-              borderLeft: '4px solid #10b981'
-            }}>
-              <div style={{ fontSize: '0.85em', color: '#6b7280', marginBottom: '4px' }}>Current Balance</div>
-              <div style={{ fontSize: '1.8em', fontWeight: '700', color: '#1f2937' }}>₹{calculateCurrentBalance()}</div>
+            <div className="summary-card green">
+              <div className="summary-label">Current Balance</div>
+              <div className="summary-value">₹{calculateCurrentBalance()}</div>
             </div>
           </>
         )}
-        <div style={{
-          background: 'white',
-          padding: '20px',
-          borderRadius: '12px',
-          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
-          borderLeft: '4px solid #3b82f6'
-        }}>
-          <div style={{ fontSize: '0.85em', color: '#6b7280', marginBottom: '4px' }}>Total Income</div>
-          <div style={{ fontSize: '1.8em', fontWeight: '700', color: '#1f2937' }}>₹{summary.totalIncome}</div>
+        <div className="summary-card blue">
+          <div className="summary-label">Total Income</div>
+          <div className="summary-value">₹{summary.totalIncome}</div>
         </div>
-        <div style={{
-          background: 'white',
-          padding: '20px',
-          borderRadius: '12px',
-          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
-          borderLeft: '4px solid #ef4444'
-        }}>
-          <div style={{ fontSize: '0.85em', color: '#6b7280', marginBottom: '4px' }}>Total Expenses</div>
-          <div style={{ fontSize: '1.8em', fontWeight: '700', color: '#1f2937' }}>₹{summary.totalExpenses}</div>
+        <div className="summary-card red">
+          <div className="summary-label">Total Expenses</div>
+          <div className="summary-value">₹{summary.totalExpenses}</div>
         </div>
-        <div style={{
-          background: 'white',
-          padding: '20px',
-          borderRadius: '12px',
-          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
-          borderLeft: '4px solid #f59e0b'
-        }}>
-          <div style={{ fontSize: '0.85em', color: '#6b7280', marginBottom: '4px' }}>Credit Card Bills</div>
-          <div style={{ fontSize: '1.8em', fontWeight: '700', color: '#1f2937' }}>₹{summary.creditCardPayments}</div>
+        <div className="summary-card orange">
+          <div className="summary-label">Credit Card Bills</div>
+          <div className="summary-value">₹{summary.creditCardPayments}</div>
         </div>
       </div>
 
       {/* Add Transaction Form */}
-      <div style={{ 
-        marginBottom: '25px', 
-        padding: '25px', 
-        background: 'white',
-        borderRadius: '12px',
-        boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
-      }}>
-        <h3 style={{ margin: '0 0 20px 0', color: '#1f2937', fontSize: '1.25em' }}>
-          Add New Transaction
-        </h3>
+      <div className="form-container">
+        <h3 className="form-title">Add New Transaction</h3>
         <form onSubmit={handleAddTransaction}>
-          <div style={{ 
-            display: 'grid', 
-            gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', 
-            gap: '12px', 
-            marginBottom: '20px' 
-          }}>
+          <div className="form-grid">
             
             <input 
               type="date" 
               name="date" 
               value={addForm.date} 
               onChange={handleAddFormChange}
-              style={{ 
-                padding: '10px',
-                border: '1px solid #d1d5db',
-                borderRadius: '6px',
-                fontSize: '0.95em'
-              }}
+              className="form-input"
             />
             
             <select 
               name="type" 
               value={addForm.type} 
               onChange={handleAddFormChange} 
-              style={{ 
-                padding: '10px',
-                border: '1px solid #d1d5db',
-                borderRadius: '6px',
-                fontSize: '0.95em'
-              }}
+              className="form-select"
             >
               <option value="expense">Expense</option>
               <option value="income">Income</option>
@@ -638,12 +438,7 @@ function Dashboard() {
               placeholder={addForm.type === 'income' ? 'From (who paid)' : 'To (who received)'} 
               value={addForm.payee} 
               onChange={handleAddFormChange}
-              style={{ 
-                padding: '10px',
-                border: '1px solid #d1d5db',
-                borderRadius: '6px',
-                fontSize: '0.95em'
-              }}
+              className="form-input"
               required
             />
             
@@ -652,12 +447,7 @@ function Dashboard() {
                 name="expenseType" 
                 value={addForm.expenseType} 
                 onChange={handleAddFormChange} 
-                style={{ 
-                  padding: '10px',
-                  border: '1px solid #d1d5db',
-                  borderRadius: '6px',
-                  fontSize: '0.95em'
-                }}
+                className="form-select"
               >
                 <option value="">Expense Type</option>
                 {expenseTypes.map(type => (
@@ -670,12 +460,7 @@ function Dashboard() {
               name="mode" 
               value={addForm.mode} 
               onChange={handleAddFormChange} 
-              style={{ 
-                padding: '10px',
-                border: '1px solid #d1d5db',
-                borderRadius: '6px',
-                fontSize: '0.95em'
-              }}
+              className="form-select"
             >
               <option value="">Payment Mode</option>
               {modes.map(mode => (
@@ -689,12 +474,7 @@ function Dashboard() {
               placeholder="Amount" 
               value={addForm.amount} 
               onChange={handleAddFormChange}
-              style={{ 
-                padding: '10px',
-                border: '1px solid #d1d5db',
-                borderRadius: '6px',
-                fontSize: '0.95em'
-              }}
+              className="form-input"
               required
             />
             
@@ -703,12 +483,7 @@ function Dashboard() {
                 name="needsWants" 
                 value={addForm.needsWants} 
                 onChange={handleAddFormChange} 
-                style={{ 
-                  padding: '10px',
-                  border: '1px solid #d1d5db',
-                  borderRadius: '6px',
-                  fontSize: '0.95em'
-                }}
+                className="form-select"
               >
                 <option value="">Needs/Wants</option>
                 {needsWantsOptions.map(option => (
@@ -722,120 +497,84 @@ function Dashboard() {
               placeholder="Remarks" 
               value={addForm.remarks} 
               onChange={handleAddFormChange}
-              style={{ 
-                padding: '10px',
-                border: '1px solid #d1d5db',
-                borderRadius: '6px',
-                fontSize: '0.95em'
-              }}
+              className="form-input"
             />
           </div>
           
           <button 
             type="submit" 
             disabled={addLoading}
-            style={{ 
-              padding: '12px 24px',
-              backgroundColor: addLoading ? '#9ca3af' : '#3b82f6',
-              color: 'white',
-              border: 'none',
-              borderRadius: '8px',
-              cursor: addLoading ? 'not-allowed' : 'pointer',
-              fontSize: '0.95em',
-              fontWeight: '500'
-            }}
+            className={`form-button ${addLoading ? 'disabled' : 'primary'}`}
           >
             {addLoading ? "Adding..." : "Add Transaction"}
           </button>
           
           {addError && (
-            <p style={{ 
-              color: '#ef4444', 
-              marginTop: '12px', 
-              padding: '10px',
-              background: '#fef2f2',
-              borderRadius: '6px',
-              fontSize: '0.9em'
-            }}>
-              {addError}
-            </p>
+            <p className="form-error">{addError}</p>
           )}
         </form>
       </div>
 
       {/* Main Layout: Income Table | Expenses Table | Goals Sidebar */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr 300px', gap: '20px' }}>
+      <div className="main-grid">
         
         {/* Income Table */}
-        <div style={{
-          background: 'white',
-          borderRadius: '12px',
-          padding: '20px',
-          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
-        }}>
-          <h3 style={{ margin: '0 0 16px 0', color: '#1f2937', fontSize: '1.1em' }}>Income</h3>
-          <div style={{ borderRadius: '8px', overflow: 'hidden', border: '1px solid #e5e7eb' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85em' }}>
-              <thead style={{ backgroundColor: '#f9fafb' }}>
+        <div className="table-container">
+          <h3 className="table-title">Income</h3>
+          <div className="table-wrapper">
+            <table className="data-table income">
+              <thead className="table-header">
                 <tr>
-                  <th style={{ padding: '10px 8px', border: '1px solid #e5e7eb', textAlign: 'left', fontWeight: '600' }}>Date</th>
-                  <th style={{ padding: '10px 8px', border: '1px solid #e5e7eb', textAlign: 'left', fontWeight: '600' }}>From</th>
-                  <th style={{ padding: '10px 8px', border: '1px solid #e5e7eb', textAlign: 'left', fontWeight: '600' }}>Mode</th>
-                  <th style={{ padding: '10px 8px', border: '1px solid #e5e7eb', textAlign: 'left', fontWeight: '600' }}>Amount</th>
-                  <th style={{ padding: '10px 8px', border: '1px solid #e5e7eb', textAlign: 'left', fontWeight: '600' }}>Remarks</th>
-                  <th style={{ padding: '10px 8px', border: '1px solid #e5e7eb', textAlign: 'left', fontWeight: '600' }}>Actions</th>
+                  <th>Date</th>
+                  <th>From</th>
+                  <th>Mode</th>
+                  <th>Amount</th>
+                  <th>Remarks</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {summary.income?.map(txn => (
-                  <tr key={txn._id}>
+                  <tr key={txn._id} className="table-row">
                     {editingId === txn._id ? (
                       // EDIT MODE
                       <>
-                        <td style={{ padding: '6px', border: '1px solid #e5e7eb' }}>
-                          <input type="date" name="date" value={editForm.date} onChange={handleEditChange} style={{ width: '100%', fontSize: '0.8em', padding: '4px' }} />
+                        <td>
+                          <input type="date" name="date" value={editForm.date} onChange={handleEditChange} className="table-cell edit-input" />
                         </td>
-                        <td style={{ padding: '6px', border: '1px solid #e5e7eb' }}>
-                          <input name="payee" value={editForm.payee} onChange={handleEditChange} style={{ width: '100%', fontSize: '0.8em', padding: '4px' }} />
+                        <td>
+                          <input name="payee" value={editForm.payee} onChange={handleEditChange} className="table-cell edit-input" />
                         </td>
-                        <td style={{ padding: '6px', border: '1px solid #e5e7eb' }}>
-                          <select name="mode" value={editForm.mode} onChange={handleEditChange} style={{ width: '100%', fontSize: '0.8em', padding: '4px' }}>
+                        <td>
+                          <select name="mode" value={editForm.mode} onChange={handleEditChange} className="table-cell edit-input">
                             <option value="">Mode</option>
                             {modes.map(mode => <option value={mode} key={mode}>{mode}</option>)}
                           </select>
                         </td>
-                        <td style={{ padding: '6px', border: '1px solid #e5e7eb' }}>
-                          <input type="number" name="amount" value={editForm.amount} onChange={handleEditChange} style={{ width: '100%', fontSize: '0.8em', padding: '4px' }} />
+                        <td>
+                          <input type="number" name="amount" value={editForm.amount} onChange={handleEditChange} className="table-cell edit-input" />
                         </td>
-                        <td style={{ padding: '6px', border: '1px solid #e5e7eb' }}>
-                          <input name="remarks" value={editForm.remarks} onChange={handleEditChange} style={{ width: '100%', fontSize: '0.8em', padding: '4px' }} />
+                        <td>
+                          <input name="remarks" value={editForm.remarks} onChange={handleEditChange} className="table-cell edit-input" />
                         </td>
-                        <td style={{ padding: '6px', border: '1px solid #e5e7eb', textAlign: 'center' }}>
-                          <button onClick={() => handleEditSave(txn._id)} style={{ marginRight: '3px', background: '#10b981', color: 'white', border: 'none', borderRadius: '3px', padding: '2px 6px', fontSize: '0.7em' }}>Save</button>
-                          <button onClick={handleEditCancel} style={{ background: '#6b7280', color: 'white', border: 'none', borderRadius: '3px', padding: '2px 6px', fontSize: '0.7em' }}>Cancel</button>
+                        <td className="actions-cell">
+                          <button onClick={() => handleEditSave(txn._id)} className="action-button save">Save</button>
+                          <button onClick={handleEditCancel} className="action-button cancel">Cancel</button>
                         </td>
                       </>
                     ) : (
                       // VIEW MODE
                       <>
-                        <td style={{ padding: '8px', border: '1px solid #e5e7eb' }}>{txn.date.slice(0,10)}</td>
-                        <td style={{ padding: '8px', border: '1px solid #e5e7eb' }}>{txn.payee}</td>
-                        <td style={{ padding: '8px', border: '1px solid #e5e7eb' }}>{txn.mode}</td>
-                        <td style={{ padding: '8px', border: '1px solid #e5e7eb', textAlign: 'right', fontWeight: '600', color: '#10b981' }}>₹{txn.amount}</td>
-                        <td style={{ padding: '8px', border: '1px solid #e5e7eb' }}>{txn.remarks}</td>
-                        <td style={{ padding: '8px', border: '1px solid #e5e7eb', textAlign: 'center' }}>
-                          <button onClick={() => handleEdit(txn)} style={{ marginRight: '3px', background: '#3b82f6', color: 'white', border: 'none', borderRadius: '3px', padding: '2px 6px', fontSize: '0.7em' }}>Edit</button>
+                        <td>{txn.date.slice(0,10)}</td>
+                        <td>{txn.payee}</td>
+                        <td>{txn.mode}</td>
+                        <td className="amount-cell income">₹{txn.amount}</td>
+                        <td>{txn.remarks}</td>
+                        <td className="actions-cell">
+                          <button onClick={() => handleEdit(txn)} className="action-button edit">Edit</button>
                           <button 
                             onClick={() => handleDelete(txn._id)} 
-                            style={{ 
-                              background: deleteClickCount[txn._id] ? '#ef4444' : '#6b7280', 
-                              color: 'white', 
-                              border: 'none', 
-                              borderRadius: '3px', 
-                              padding: '2px 6px', 
-                              fontSize: '0.7em',
-                              fontWeight: deleteClickCount[txn._id] ? 'bold' : 'normal'
-                            }}
+                            className={`action-button delete ${deleteClickCount[txn._id] ? 'confirm' : ''}`}
                           >
                             {deleteClickCount[txn._id] ? 'Confirm?' : 'Del'}
                           </button>
@@ -846,7 +585,7 @@ function Dashboard() {
                 ))}
                 {(!summary.income || summary.income.length === 0) && (
                   <tr>
-                    <td colSpan="6" style={{ padding: '20px', textAlign: 'center', color: '#6b7280' }}>No income transactions</td>
+                    <td colSpan="6" className="empty-state">No income transactions</td>
                   </tr>
                 )}
               </tbody>
@@ -854,26 +593,21 @@ function Dashboard() {
           </div>
         </div>
 
-        {/* Expenses Table WITH ALL FEATURES */}
-        <div style={{
-          background: 'white',
-          borderRadius: '12px',
-          padding: '20px',
-          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
-        }}>
-          <h3 style={{ margin: '0 0 16px 0', color: '#1f2937', fontSize: '1.1em' }}>Expenses</h3>
-          <div style={{ borderRadius: '8px', overflow: 'hidden', border: '1px solid #e5e7eb' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8em' }}>
-              <thead style={{ backgroundColor: '#f9fafb' }}>
+        {/* Expenses Table */}
+        <div className="table-container">
+          <h3 className="table-title">Expenses</h3>
+          <div className="table-wrapper">
+            <table className="data-table expenses">
+              <thead className="table-header expenses">
                 <tr>
-                  <th style={{ padding: '8px 4px', border: '1px solid #e5e7eb', textAlign: 'left', fontWeight: '600' }}>Date</th>
-                  <th style={{ padding: '8px 4px', border: '1px solid #e5e7eb', textAlign: 'left', fontWeight: '600' }}>To</th>
-                  <th style={{ padding: '8px 4px', border: '1px solid #e5e7eb', textAlign: 'left', fontWeight: '600' }}>Type</th>
-                  <th style={{ padding: '8px 4px', border: '1px solid #e5e7eb', textAlign: 'left', fontWeight: '600' }}>Mode</th>
-                  <th style={{ padding: '8px 4px', border: '1px solid #e5e7eb', textAlign: 'left', fontWeight: '600' }}>Amount</th>
-                  <th style={{ padding: '8px 4px', border: '1px solid #e5e7eb', textAlign: 'left', fontWeight: '600' }}>N/W</th>
-                  <th style={{ padding: '8px 4px', border: '1px solid #e5e7eb', textAlign: 'left', fontWeight: '600' }}>Remarks</th>
-                  <th style={{ padding: '8px 4px', border: '1px solid #e5e7eb', textAlign: 'left', fontWeight: '600' }}>Actions</th>
+                  <th>Date</th>
+                  <th>To</th>
+                  <th>Type</th>
+                  <th>Mode</th>
+                  <th>Amount</th>
+                  <th>N/W</th>
+                  <th>Remarks</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -884,92 +618,76 @@ function Dashboard() {
                 ]
                 .sort((a, b) => new Date(a.date) - new Date(b.date))
                 .map(txn => (
-                  <tr key={txn._id}>
+                  <tr key={txn._id} className="table-row expenses">
                     {editingId === txn._id ? (
                       // EDIT MODE
                       <>
-                        <td style={{ padding: '4px', border: '1px solid #e5e7eb' }}>
-                          <input type="date" name="date" value={editForm.date} onChange={handleEditChange} style={{ width: '100%', fontSize: '0.7em', padding: '2px' }} />
+                        <td>
+                          <input type="date" name="date" value={editForm.date} onChange={handleEditChange} className="table-cell edit-input expenses" />
                         </td>
-                        <td style={{ padding: '4px', border: '1px solid #e5e7eb' }}>
-                          <input name="payee" value={editForm.payee} onChange={handleEditChange} style={{ width: '100%', fontSize: '0.7em', padding: '2px' }} />
+                        <td>
+                          <input name="payee" value={editForm.payee} onChange={handleEditChange} className="table-cell edit-input expenses" />
                         </td>
-                        <td style={{ padding: '4px', border: '1px solid #e5e7eb' }}>
-                          <select name="expenseType" value={editForm.expenseType} onChange={handleEditChange} style={{ width: '100%', fontSize: '0.7em', padding: '2px' }}>
+                        <td>
+                          <select name="expenseType" value={editForm.expenseType} onChange={handleEditChange} className="table-cell edit-input expenses">
                             <option value="">Type</option>
                             {expenseTypes.map(type => <option value={type} key={type}>{type}</option>)}
                           </select>
                         </td>
-                        <td style={{ padding: '4px', border: '1px solid #e5e7eb' }}>
-                          <select name="mode" value={editForm.mode} onChange={handleEditChange} style={{ width: '100%', fontSize: '0.7em', padding: '2px' }}>
+                        <td>
+                          <select name="mode" value={editForm.mode} onChange={handleEditChange} className="table-cell edit-input expenses">
                             <option value="">Mode</option>
                             {modes.map(mode => <option value={mode} key={mode}>{mode}</option>)}
                           </select>
                         </td>
-                        <td style={{ padding: '4px', border: '1px solid #e5e7eb' }}>
-                          <input type="number" name="amount" value={editForm.amount} onChange={handleEditChange} style={{ width: '100%', fontSize: '0.7em', padding: '2px' }} />
+                        <td>
+                          <input type="number" name="amount" value={editForm.amount} onChange={handleEditChange} className="table-cell edit-input expenses" />
                         </td>
-                        <td style={{ padding: '4px', border: '1px solid #e5e7eb' }}>
-                          <select name="needsWants" value={editForm.needsWants} onChange={handleEditChange} style={{ width: '100%', fontSize: '0.7em', padding: '2px' }}>
+                        <td>
+                          <select name="needsWants" value={editForm.needsWants} onChange={handleEditChange} className="table-cell edit-input expenses">
                             <option value="">N/W</option>
                             {needsWantsOptions.map(option => <option value={option} key={option}>{option}</option>)}
                           </select>
                         </td>
-                        <td style={{ padding: '4px', border: '1px solid #e5e7eb' }}>
-                          <input name="remarks" value={editForm.remarks} onChange={handleEditChange} style={{ width: '100%', fontSize: '0.7em', padding: '2px' }} />
+                        <td>
+                          <input name="remarks" value={editForm.remarks} onChange={handleEditChange} className="table-cell edit-input expenses" />
                         </td>
-                        <td style={{ padding: '4px', border: '1px solid #e5e7eb', textAlign: 'center' }}>
-                          <button onClick={() => handleEditSave(txn._id)} style={{ marginRight: '2px', background: '#10b981', color: 'white', border: 'none', borderRadius: '2px', padding: '1px 4px', fontSize: '0.6em' }}>Save</button>
-                          <button onClick={handleEditCancel} style={{ background: '#6b7280', color: 'white', border: 'none', borderRadius: '2px', padding: '1px 4px', fontSize: '0.6em' }}>Cancel</button>
+                        <td className="actions-cell">
+                          <button onClick={() => handleEditSave(txn._id)} className="action-button save expenses">Save</button>
+                          <button onClick={handleEditCancel} className="action-button cancel expenses">Cancel</button>
                         </td>
                       </>
                     ) : (
                       // VIEW MODE
                       <>
-                        <td style={{ padding: '6px 4px', border: '1px solid #e5e7eb' }}>{txn.date.slice(0,10)}</td>
-                        <td style={{ padding: '6px 4px', border: '1px solid #e5e7eb' }}>{txn.payee}</td>
-                        <td style={{ padding: '6px 4px', border: '1px solid #e5e7eb' }}>
+                        <td>{txn.date.slice(0,10)}</td>
+                        <td>{txn.payee}</td>
+                        <td>
                           {txn.expenseType || 
                            (txn.type === 'saved' ? 'Saved' : '') ||
                            (txn.type === 'credit_card_payment' ? 'CC Payment' : 'Expense')}
                         </td>
-                        <td style={{ padding: '6px 4px', border: '1px solid #e5e7eb' }}>{txn.mode}</td>
-                        <td style={{ padding: '6px 4px', border: '1px solid #e5e7eb', textAlign: 'right', fontWeight: '600', color: '#ef4444' }}>₹{txn.amount}</td>
-                        <td style={{ 
-                          padding: '6px 4px', 
-                          border: '1px solid #e5e7eb',
-                          fontSize: '0.75em'
-                        }}>
-                          <span style={{
-                            padding: '2px 6px',
-                            borderRadius: '4px',
-                            fontSize: '0.75em',
-                            backgroundColor: 
-                              txn.needsWants === 'Needs' ? '#dcfce7' : 
-                              txn.needsWants === 'Wants' ? '#fef3c7' : 
-                              txn.needsWants === 'Savings' || txn.type === 'saved' ? '#dbeafe' :
-                              txn.needsWants === 'Invested' ? '#e0e7ff' :
-                              txn.type === 'credit_card_payment' ? '#fed7aa' : '#f3f4f6'
-                          }}>
+                        <td>{txn.mode}</td>
+                        <td className="amount-cell expense">₹{txn.amount}</td>
+                        <td>
+                          <span className={`needs-wants-tag expenses ${
+                            txn.needsWants === 'Needs' ? 'needs' : 
+                            txn.needsWants === 'Wants' ? 'wants' : 
+                            txn.needsWants === 'Savings' || txn.type === 'saved' ? 'savings' :
+                            txn.needsWants === 'Invested' ? 'invested' :
+                            txn.type === 'credit_card_payment' ? 'cc-bill' : ''
+                          }`}>
                             {txn.needsWants || 
                              (txn.type === 'saved' ? 'Savings' : '') ||
                              (txn.type === 'credit_card_payment' ? 'CC Bill' : '—')}
                           </span>
                         </td>
-                        <td style={{ padding: '6px 4px', border: '1px solid #e5e7eb' }}>{txn.remarks}</td>
-                        <td style={{ padding: '6px 4px', border: '1px solid #e5e7eb', textAlign: 'center' }}>
-                          <button onClick={() => handleEdit(txn)} style={{ marginRight: '2px', background: '#3b82f6', color: 'white', border: 'none', borderRadius: '2px', padding: '1px 4px', fontSize: '0.6em' }}>Edit</button>
+                        <td>{txn.remarks}</td>
+                        <td className="actions-cell">
+                          <button onClick={() => handleEdit(txn)} className="action-button edit expenses">Edit</button>
                           <button 
                             onClick={() => handleDelete(txn._id)} 
-                            style={{ 
-                              background: deleteClickCount[txn._id] ? '#ef4444' : '#6b7280', 
-                              color: 'white', 
-                              border: 'none', 
-                              borderRadius: '2px', 
-                              padding: '1px 4px', 
-                              fontSize: '0.6em',
-                              fontWeight: deleteClickCount[txn._id] ? 'bold' : 'normal'
-                            }}
+                            className={`action-button delete expenses ${deleteClickCount[txn._id] ? 'confirm' : ''}`}
                           >
                             {deleteClickCount[txn._id] ? 'Sure?' : 'Del'}
                           </button>
@@ -982,7 +700,7 @@ function Dashboard() {
                  (!summary.savings || summary.savings.length === 0) && 
                  (!summary.ccPayments || summary.ccPayments.length === 0) && (
                   <tr>
-                    <td colSpan="8" style={{ padding: '20px', textAlign: 'center', color: '#6b7280' }}>No expense transactions</td>
+                    <td colSpan="8" className="empty-state">No expense transactions</td>
                   </tr>
                 )}
               </tbody>
@@ -991,13 +709,8 @@ function Dashboard() {
         </div>
 
         {/* Goals Sidebar */}
-        <div style={{
-          background: 'white',
-          borderRadius: '12px',
-          padding: '20px',
-          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
-        }}>
-          <h3 style={{ margin: '0 0 16px 0', color: '#1f2937', fontSize: '1.1em' }}>Goals</h3>
+        <div className="goals-sidebar">
+          <h3 className="goals-title">Goals</h3>
           {summary.goalProgress && (
             <>
               {renderGoalProgress(summary.goalProgress.needs, 'Needs', '#10b981')}
@@ -1007,21 +720,13 @@ function Dashboard() {
             </>
           )}
           
-          <hr style={{ margin: '20px 0', border: 'none', height: '1px', background: '#e5e7eb' }} />
+          <hr className="goal-divider" />
           
-          <h4 style={{ margin: '0 0 12px 0', color: '#4b5563', fontSize: '1em' }}>Category Breakdown</h4>
+          <h4 className="category-title">Category Breakdown</h4>
           {summary.expensesByType && Object.entries(summary.expensesByType).map(([type, amount]) => (
-            <div key={type} style={{ 
-              display: 'flex', 
-              justifyContent: 'space-between', 
-              marginBottom: '8px',
-              padding: '6px 8px',
-              background: '#f9fafb',
-              borderRadius: '4px',
-              fontSize: '0.85em'
-            }}>
+            <div key={type} className="category-item">
               <span>{type}:</span>
-              <span style={{ fontWeight: '600' }}>₹{amount}</span>
+              <span className="category-value">₹{amount}</span>
             </div>
           ))}
         </div>
