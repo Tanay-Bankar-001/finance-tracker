@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import './Dashboard.css';
 import axios from 'axios';
 
 const userId = '68d669f0d712f627d829c474';
@@ -427,26 +428,15 @@ function Dashboard() {
       }}>
         <div style={{ position: 'relative', width: '100%', maxWidth: '500px' }}>
           <input
-            type="text"
-            placeholder="🔍 Quick search transactions... (payee, remarks, category)"
-            value={quickSearch}
-            onChange={(e) => handleQuickSearch(e.target.value)}
-            onBlur={() => setTimeout(() => setShowQuickResults(false), 200)}
-            onFocus={() => quickSearch.length >= 2 && setShowQuickResults(true)}
-            style={{
-              width: '100%',
-              padding: '12px 20px',
-              border: '2px solid #e5e7eb',
-              borderRadius: '25px',
-              fontSize: '1em',
-              outline: 'none',
-              transition: 'border-color 0.3s ease',
-              background: 'white',
-              boxShadow: '0 2px 10px rgba(0, 0, 0, 0.08)'
-            }}
-            onFocus={(e) => e.target.style.borderColor = '#3b82f6'}
-            onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
-          />
+  type="text"
+  className="search-input"
+  placeholder="🔍 Quick search transactions... (payee, remarks, category)"
+  value={quickSearch}
+  onChange={(e) => handleQuickSearch(e.target.value)}
+  onBlur={() => setTimeout(() => setShowQuickResults(false), 200)}
+  onFocus={() => quickSearch.length >= 2 && setShowQuickResults(true)}
+/>
+
           
           {/* Quick Search Results Dropdown */}
           {showQuickResults && quickSearchResults.length > 0 && (
