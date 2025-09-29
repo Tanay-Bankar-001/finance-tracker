@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import config from './config';
+import config from './config.js';
 import axios from 'axios';
 import './Dashboard.css';
 import CreditCardSummary from './components/CreditCardSummary';
