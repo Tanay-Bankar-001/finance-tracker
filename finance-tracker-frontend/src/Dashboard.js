@@ -4,6 +4,7 @@ import axios from 'axios';
 import './Dashboard.css';
 import CreditCardSummary from './components/CreditCardSummary';
 
+
 const userId = '68d669f0d712f627d829c474';
 
 const currentDate = new Date();
@@ -27,12 +28,14 @@ function Dashboard() {
   // State management
   const [month, setMonth] = useState(initialMonth);
   const [year, setYear] = useState(initialYear);
+  
   const [account, setAccount] = useState(null);
   const [editingBalance, setEditingBalance] = useState(false);
   const [balanceForm, setBalanceForm] = useState({
     startingBalance: 0,
     currentBalance: 0
   });
+  
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState(null);
@@ -40,30 +43,80 @@ function Dashboard() {
   const [addForm, setAddForm] = useState(initialFormState);
   const [addLoading, setAddLoading] = useState(false);
   const [addError, setAddError] = useState("");
+
+  // Double-click delete states
   const [deleteClickCount, setDeleteClickCount] = useState({});
   const [deleteTimeouts, setDeleteTimeouts] = useState({});
+
+  // Quick search states
   const [quickSearch, setQuickSearch] = useState('');
   const [quickSearchResults, setQuickSearchResults] = useState([]);
   const [showQuickResults, setShowQuickResults] = useState(false);
+
+  // Data arrays
   const [expenseTypes] = useState([
     "Food", "Essentials", "Travel", "Investment", "Entertainment", "Laundry", "Saved", "Fund Transfer"
   ]);
+  
   const [needsWantsOptions] = useState([
     "Needs", "Wants", "Savings", "Invested", "Fund Transfer"
   ]);
+
   const [modes] = useState([
     "GPay UPI", "NEFT", "Cash", "Paytm UPI", "Mobikwik UPI", "Amazon Pay UPI", 
     "Coral GPay CC", "MMT Mastercard", "Coral Paytm CC", "Debit Card"
   ]);
+
   const [creditCardSummary, setCreditCardSummary] = useState([]);
 
-    // Place the navigation and helper functions here:
-  const getMonthName = (monthNum) => {
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    return months[monthNum - 1];
+  // Helper functions
+  const getMonthYearString = (m, y) => `${y}-${m.toString().padStart(2, '0')}`;
+  
+  const fetchCreditCardSummary = async (selectedMonth = month, selectedYear = year) => {
+  try {
+    const res = await axios.get(
+      `${config.API_BASE_URL}/api/creditcards/summary/${userId}?month=${selectedMonth}&year=${selectedYear}`
+    );
+    setCreditCardSummary(res.data.cards);
+  } catch (error) {
+    setCreditCardSummary([]);
+  }
+};
+
+  const fetchAccount = async (selectedMonth = month, selectedYear = year) => {
+    try {
+      const monthYear = getMonthYearString(selectedMonth, selectedYear);
+      const res = await axios.get(`http://localhost:3000/api/accounts/${userId}/${monthYear}`);
+      setAccount(res.data);
+      setBalanceForm({
+        startingBalance: res.data.startingBalance,
+        currentBalance: res.data.currentBalance
+      });
+    } catch (error) {
+      console.error("Error fetching account:", error);
+    }
   };
 
+  const fetchSummary = async (selectedMonth = month, selectedYear = year) => {
+    setLoading(true);
+    try {
+      const res = await axios.get(
+        `http://localhost:3000/api/transactions/summary/${userId}?month=${selectedMonth}&year=${selectedYear}`
+      );
+      setSummary(res.data);
+    } catch (error) {
+      console.error("Error fetching summary:", error);
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    fetchSummary();
+    fetchAccount();
+      fetchCreditCardSummary();
+  }, [month, year]);
+
+  // Navigation functions
   const goToPreviousMonth = () => {
     if (month === 1) {
       setMonth(12);
@@ -88,56 +141,25 @@ function Dashboard() {
     setYear(now.getFullYear());
   };
 
-  const getMonthYearString = (m, y) => `${y}-${m.toString().padStart(2, '0')}`;
-
-  const fetchCreditCardSummary = async (selectedMonth = month, selectedYear = year) => {
-    try {
-      const res = await axios.get(
-        `${config.API_BASE_URL}/api/creditcards/summary/${userId}?month=${selectedMonth}&year=${selectedYear}`
-      );
-      setCreditCardSummary(res.data.cards);
-    } catch (error) {
-      setCreditCardSummary([]);
-    }
+  const getMonthName = (monthNum) => {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
+                   'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return months[monthNum - 1];
   };
 
-  const fetchAccount = async (selectedMonth = month, selectedYear = year) => {
-    try {
-      const monthYear = getMonthYearString(selectedMonth, selectedYear);
-      const res = await axios.get(`${config.API_BASE_URL}/api/accounts/${userId}/${monthYear}`);
-      setAccount(res.data);
-      setBalanceForm({
-        startingBalance: res.data.startingBalance,
-        currentBalance: res.data.currentBalance
-      });
-    } catch (error) {
-      console.error("Error fetching account:", error);
-    }
-  };
-
-  const fetchSummary = async (selectedMonth = month, selectedYear = year) => {
-    setLoading(true);
-    try {
-      const res = await axios.get(
-        `${config.API_BASE_URL}/api/transactions/summary/${userId}?month=${selectedMonth}&year=${selectedYear}`
-      );
-      setSummary(res.data);
-    } catch (error) {
-      console.error("Error fetching summary:", error);
-    }
-    setLoading(false);
-  };
-
+  // Quick search function
   const handleQuickSearch = async (searchTerm) => {
     setQuickSearch(searchTerm);
+    
     if (searchTerm.length < 2) {
       setQuickSearchResults([]);
       setShowQuickResults(false);
       return;
     }
+    
     try {
       const params = new URLSearchParams({ search: searchTerm, limit: 5 });
-      const res = await axios.get(`${config.API_BASE_URL}/api/transactions/search/${userId}?${params}`);
+      const res = await axios.get(`http://localhost:3000/api/transactions/search/${userId}?${params}`);
       setQuickSearchResults(res.data.transactions || []);
       setShowQuickResults(true);
     } catch (error) {
@@ -146,6 +168,7 @@ function Dashboard() {
     }
   };
 
+  // Form handlers
   const handleAddFormChange = (e) => {
     const { name, value, type, checked } = e.target;
     setAddForm({ 
@@ -169,7 +192,7 @@ function Dashboard() {
         date: addForm.date ? new Date(addForm.date) : new Date(),
         amount: Number(addForm.amount)
       };
-      await axios.post(`${config.API_BASE_URL}/api/transactions/add`, payload);
+      await axios.post('http://localhost:3000/api/transactions/add', payload);
       await fetchSummary();
       await fetchAccount();
       setAddForm(initialFormState);
@@ -179,6 +202,7 @@ function Dashboard() {
     setAddLoading(false);
   };
 
+  // Edit/Delete handlers
   const handleEdit = (txn) => {
     setEditingId(txn._id);
     setEditForm({
@@ -201,7 +225,7 @@ function Dashboard() {
   const handleEditSave = async (id) => {
     try {
       const payload = { ...editForm, date: new Date(editForm.date), amount: Number(editForm.amount) };
-      await axios.put(`${config.API_BASE_URL}/api/transactions/${id}`, payload);
+      await axios.put(`http://localhost:3000/api/transactions/${id}`, payload);
       await fetchSummary();
       await fetchAccount();
       setEditingId(null);
@@ -215,10 +239,10 @@ function Dashboard() {
     setEditForm({});
   };
 
-  // (continued...)
-
-    const handleDelete = async (id) => {
+  // Delete handler
+  const handleDelete = async (id) => {
     const currentCount = deleteClickCount[id] || 0;
+    
     if (currentCount === 0) {
       setDeleteClickCount(prev => ({ ...prev, [id]: 1 }));
       const timeout = setTimeout(() => {
@@ -237,7 +261,7 @@ function Dashboard() {
     } else {
       try {
         if (deleteTimeouts[id]) clearTimeout(deleteTimeouts[id]);
-        await axios.delete(`${config.API_BASE_URL}/api/transactions/${id}`);
+        await axios.delete(`http://localhost:3000/api/transactions/${id}`);
         await fetchSummary();
         await fetchAccount();
         setEditingId(null);
@@ -262,6 +286,7 @@ function Dashboard() {
     return account.startingBalance + summary.netFlow;
   };
 
+  // Render goal progress bar
   const renderGoalProgress = (goal, label, color) => {
     const percentage = goal.target > 0 ? (goal.amount / goal.target) * 100 : 0;
     return (
@@ -283,13 +308,6 @@ function Dashboard() {
     );
   };
 
-  useEffect(() => {
-    fetchSummary();
-    fetchAccount();
-    fetchCreditCardSummary();
-    // eslint-disable-next-line
-  }, [month, year]);
-
   if (loading) {
     return (
       <div className="loading-container">
@@ -298,17 +316,19 @@ function Dashboard() {
       </div>
     );
   }
+
   if (!summary) return <div className="empty-state">No data.</div>;
 
   return (
     <div className="dashboard-container">
+      
       {/* Header */}
       <div className="dashboard-header">
         <h1 className="dashboard-title">💰 Budget Tracker</h1>
         <h2 className="dashboard-subtitle">{getMonthName(month)} {year}</h2>
       </div>
 
-      {/* Month Navigation Buttons */}
+      {/* Month Navigation */}
       <div className="nav-buttons">
         <button className="nav-button primary" onClick={goToPreviousMonth}>
           ← Previous
@@ -333,6 +353,7 @@ function Dashboard() {
             onBlur={() => setTimeout(() => setShowQuickResults(false), 200)}
             onFocus={() => quickSearch.length >= 2 && setShowQuickResults(true)}
           />
+          
           {/* Quick Search Results Dropdown */}
           {showQuickResults && quickSearchResults.length > 0 && (
             <div className="search-dropdown">
@@ -402,7 +423,8 @@ function Dashboard() {
           <div className="summary-value">₹{summary.creditCardPayments}</div>
         </div>
       </div>
-      {/* Credit Card Summary Table */}
+      
+      {/* Credit Card Summary */}    
       <CreditCardSummary cards={creditCardSummary} />
 
       {/* Add Transaction Form */}
@@ -410,6 +432,7 @@ function Dashboard() {
         <h3 className="form-title">Add New Transaction</h3>
         <form onSubmit={handleAddTransaction}>
           <div className="form-grid">
+            
             <input 
               type="date" 
               name="date" 
@@ -417,6 +440,7 @@ function Dashboard() {
               onChange={handleAddFormChange}
               className="form-input"
             />
+            
             <select 
               name="type" 
               value={addForm.type} 
@@ -428,6 +452,7 @@ function Dashboard() {
               <option value="saved">Saved</option>
               <option value="credit_card_payment">Credit Card Payment</option>
             </select>
+            
             <input 
               name="payee" 
               placeholder={addForm.type === 'income' ? 'From (who paid)' : 'To (who received)'} 
@@ -436,6 +461,7 @@ function Dashboard() {
               className="form-input"
               required
             />
+            
             {addForm.type === 'expense' && (
               <select 
                 name="expenseType" 
@@ -449,6 +475,7 @@ function Dashboard() {
                 ))}
               </select>
             )}
+            
             <select 
               name="mode" 
               value={addForm.mode} 
@@ -460,6 +487,7 @@ function Dashboard() {
                 <option value={mode} key={mode}>{mode}</option>
               ))}
             </select>
+            
             <input 
               type="number" 
               name="amount" 
@@ -469,6 +497,7 @@ function Dashboard() {
               className="form-input"
               required
             />
+            
             {addForm.type === 'expense' && (
               <select 
                 name="needsWants" 
@@ -482,6 +511,7 @@ function Dashboard() {
                 ))}
               </select>
             )}
+            
             <input 
               name="remarks" 
               placeholder="Remarks" 
@@ -490,6 +520,7 @@ function Dashboard() {
               className="form-input"
             />
           </div>
+          
           <button 
             type="submit" 
             disabled={addLoading}
@@ -497,15 +528,16 @@ function Dashboard() {
           >
             {addLoading ? "Adding..." : "Add Transaction"}
           </button>
+          
           {addError && (
             <p className="form-error">{addError}</p>
           )}
         </form>
       </div>
 
-      {/* Main Grid: Income Table | Expenses Table | Goals Sidebar */}
+      {/* Main Layout: Income Table | Expenses Table | Goals Sidebar */}
       <div className="main-grid">
-
+        
         {/* Income Table */}
         <div className="table-container">
           <h3 className="table-title">Income</h3>
@@ -525,6 +557,7 @@ function Dashboard() {
                 {summary.income?.map(txn => (
                   <tr key={txn._id} className="table-row">
                     {editingId === txn._id ? (
+                      // EDIT MODE
                       <>
                         <td>
                           <input type="date" name="date" value={editForm.date} onChange={handleEditChange} className="table-cell edit-input" />
@@ -550,6 +583,7 @@ function Dashboard() {
                         </td>
                       </>
                     ) : (
+                      // VIEW MODE
                       <>
                         <td>{txn.date.slice(0,10)}</td>
                         <td>{txn.payee}</td>
@@ -578,7 +612,8 @@ function Dashboard() {
             </table>
           </div>
         </div>
-                {/* Expenses Table */}
+
+        {/* Expenses Table */}
         <div className="table-container">
           <h3 className="table-title">Expenses</h3>
           <div className="table-wrapper">
@@ -600,10 +635,12 @@ function Dashboard() {
                   ...(summary.expenses || []),
                   ...(summary.savings || []),
                   ...(summary.ccPayments || [])
-                ].sort((a, b) => new Date(a.date) - new Date(b.date))
-                 .map(txn => (
+                ]
+                .sort((a, b) => new Date(a.date) - new Date(b.date))
+                .map(txn => (
                   <tr key={txn._id} className="table-row expenses">
                     {editingId === txn._id ? (
+                      // EDIT MODE
                       <>
                         <td>
                           <input type="date" name="date" value={editForm.date} onChange={handleEditChange} className="table-cell edit-input expenses" />
@@ -641,6 +678,7 @@ function Dashboard() {
                         </td>
                       </>
                     ) : (
+                      // VIEW MODE
                       <>
                         <td>{txn.date.slice(0,10)}</td>
                         <td>{txn.payee}</td>
@@ -718,5 +756,3 @@ function Dashboard() {
 }
 
 export default Dashboard;
-
-
