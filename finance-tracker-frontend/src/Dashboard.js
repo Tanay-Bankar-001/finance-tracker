@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import './Dashboard.css';
+import CreditCardSummary from './components/CreditCardSummary';
+
 
 const userId = '68d669f0d712f627d829c474';
 
@@ -64,9 +66,22 @@ function Dashboard() {
     "Coral GPay CC", "MMT Mastercard", "Coral Paytm CC", "Debit Card"
   ]);
 
+  const [creditCardSummary, setCreditCardSummary] = useState([]);
+
   // Helper functions
   const getMonthYearString = (m, y) => `${y}-${m.toString().padStart(2, '0')}`;
   
+  const fetchCreditCardSummary = async (selectedMonth = month, selectedYear = year) => {
+  try {
+    const res = await axios.get(
+      `${config.API_BASE_URL}/api/creditcards/summary/${userId}?month=${selectedMonth}&year=${selectedYear}`
+    );
+    setCreditCardSummary(res.data.cards);
+  } catch (error) {
+    setCreditCardSummary([]);
+  }
+};
+
   const fetchAccount = async (selectedMonth = month, selectedYear = year) => {
     try {
       const monthYear = getMonthYearString(selectedMonth, selectedYear);
@@ -97,6 +112,7 @@ function Dashboard() {
   useEffect(() => {
     fetchSummary();
     fetchAccount();
+      fetchCreditCardSummary();
   }, [month, year]);
 
   // Navigation functions
@@ -406,6 +422,9 @@ function Dashboard() {
           <div className="summary-value">₹{summary.creditCardPayments}</div>
         </div>
       </div>
+      
+      {/* Credit Card Summary */}    
+      <CreditCardSummary cards={creditCardSummary} />
 
       {/* Add Transaction Form */}
       <div className="form-container">
