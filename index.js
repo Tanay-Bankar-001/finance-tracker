@@ -11,6 +11,10 @@ mongoose.connect(process.env.MONGODB_URI, {
 .then(() => console.log('Connected to MongoDB Atlas!'))
 .catch((err) => console.error('MongoDB connection error:', err));
 
+const creditCardRoutes = require("./routes/creditCardRoutes"); // top, with other routes
+app.use("/api/creditcards", creditCardRoutes);                 // after other routes
+
+
 // Setup Express server
 const express = require('express');
 const cors = require('cors');
