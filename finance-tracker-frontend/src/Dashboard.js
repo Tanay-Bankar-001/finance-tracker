@@ -57,6 +57,37 @@ function Dashboard() {
   ]);
   const [creditCardSummary, setCreditCardSummary] = useState([]);
 
+    // Place the navigation and helper functions here:
+  const getMonthName = (monthNum) => {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return months[monthNum - 1];
+  };
+
+  const goToPreviousMonth = () => {
+    if (month === 1) {
+      setMonth(12);
+      setYear(year - 1);
+    } else {
+      setMonth(month - 1);
+    }
+  };
+
+  const goToNextMonth = () => {
+    if (month === 12) {
+      setMonth(1);
+      setYear(year + 1);
+    } else {
+      setMonth(month + 1);
+    }
+  };
+
+  const goToCurrentMonth = () => {
+    const now = new Date();
+    setMonth(now.getMonth() + 1);
+    setYear(now.getFullYear());
+  };
+
   const getMonthYearString = (m, y) => `${y}-${m.toString().padStart(2, '0')}`;
 
   const fetchCreditCardSummary = async (selectedMonth = month, selectedYear = year) => {
