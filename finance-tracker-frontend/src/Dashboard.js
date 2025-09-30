@@ -73,7 +73,7 @@ function Dashboard() {
   const fetchAccount = async (selectedMonth = month, selectedYear = year) => {
     try {
       const monthYear = getMonthYearString(selectedMonth, selectedYear);
-      const res = await axios.get(`http://localhost:3000/api/accounts/${userId}/${monthYear}`);
+      const res = await axios.get(`${config.API_BASE_URL}/api/accounts/${userId}/${monthYear}`);
       setAccount(res.data);
       setBalanceForm({
         startingBalance: res.data.startingBalance,
@@ -88,7 +88,7 @@ function Dashboard() {
     setLoading(true);
     try {
       const res = await axios.get(
-        `http://localhost:3000/api/transactions/summary/${userId}?month=${selectedMonth}&year=${selectedYear}`
+        `${config.API_BASE_URL}/api/transactions/summary/${userId}?month=${selectedMonth}&year=${selectedYear}`
       );
       setSummary(res.data);
     } catch (error) {
@@ -144,7 +144,7 @@ function Dashboard() {
     }
     try {
       const params = new URLSearchParams({ search: searchTerm, limit: 5 });
-      const res = await axios.get(`http://localhost:3000/api/transactions/search/${userId}?${params}`);
+      const res = await axios.get(`${config.API_BASE_URL}/api/transactions/search/${userId}?${params}`);
       setQuickSearchResults(res.data.transactions || []);
       setShowQuickResults(true);
     } catch (error) {
@@ -177,7 +177,7 @@ function Dashboard() {
         date: addForm.date ? new Date(addForm.date) : new Date(),
         amount: Number(addForm.amount)
       };
-      await axios.post('http://localhost:3000/api/transactions/add', payload);
+      await axios.post('${config.API_BASE_URL}/api/transactions/add', payload);
       await fetchSummary();
       await fetchAccount();
       setAddForm(initialFormState);
@@ -210,7 +210,7 @@ function Dashboard() {
   const handleEditSave = async (id) => {
     try {
       const payload = { ...editForm, date: new Date(editForm.date), amount: Number(editForm.amount) };
-      await axios.put(`http://localhost:3000/api/transactions/${id}`, payload);
+      await axios.put(`${config.API_BASE_URL}/api/transactions/${id}`, payload);
       await fetchSummary();
       await fetchAccount();
       setEditingId(null);
@@ -245,7 +245,7 @@ function Dashboard() {
     } else {
       try {
         if (deleteTimeouts[id]) clearTimeout(deleteTimeouts[id]);
-        await axios.delete(`http://localhost:3000/api/transactions/${id}`);
+        await axios.delete(`${config.API_BASE_URL}/api/transactions/${id}`);
         await fetchSummary();
         await fetchAccount();
         setEditingId(null);
