@@ -1,13 +1,16 @@
-const express     = require('express');
-const router      = express.Router();
+const express = require('express');
+const router = express.Router();
 const Transaction = require('../models/Transaction');
 
 /* CREATE */
 router.post('/add', async (req, res) => {
   try {
+    console.log("POST /add req.body:", req.body); // LOG the body for debugging
     const saved = await new Transaction(req.body).save();
+    console.log("Saved transaction:", saved);      // LOG the saved object
     res.status(201).json(saved);
   } catch (err) {
+    console.error("Add transaction error:", err);  // LOG any error
     res.status(400).json({ error: err.message });
   }
 });
