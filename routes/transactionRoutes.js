@@ -1,16 +1,33 @@
 const express = require('express');
+const mongoose = require('mongoose');
 const router = express.Router();
 const Transaction = require('../models/Transaction');
 
 /* CREATE */
 router.post('/add', async (req, res) => {
   try {
-    console.log("POST /add req.body:", req.body); // LOG the body for debugging
+    // LOG request body for debugging every POST
+    console.log("POST /add req.body:", req.body);
+
+    // Convert user field to ObjectId if needed
+    if (req.body.user && typeof req.body.user === "string" && mongoose.Types.ObjectId.isValid(req.body.user)) {
+      req.body.user = new mongoose.Types.ObjectId(req.body.user);
+    }
+
+    // Always set a valid date, fallback to current
+    if (!req.body.date || isNaN(new Date(req.body.date).getTime())) {
+      req.body.date = new Date();
+    }
+
+    // Create and save
     const saved = await new Transaction(req.body).save();
-    console.log("Saved transaction:", saved);      // LOG the saved object
+    // Log successful save
+    console.log("Saved transaction:", saved);
+
     res.status(201).json(saved);
   } catch (err) {
-    console.error("Add transaction error:", err);  // LOG any error
+    // LOG errors for diagnostics
+    console.error("Add transaction error:", err);
     res.status(400).json({ error: err.message });
   }
 });
@@ -33,10 +50,9 @@ router.get('/search/:userId', async (req, res) => {
       startDate, endDate, minAmount, maxAmount,
       needsWants, limit = 100
     } = req.query;
-    
+
     let query = { user: req.params.userId };
-    
-    // Text search across payee, remarks, and expenseType
+
     if (search && search.trim()) {
       query.$or = [
         { payee: { $regex: search.trim(), $options: 'i' } },
@@ -44,59 +60,51 @@ router.get('/search/:userId', async (req, res) => {
         { expenseType: { $regex: search.trim(), $options: 'i' } }
       ];
     }
-    
-    // Exact matches
     if (category) query.category = category;
     if (expenseType) query.expenseType = expenseType;
     if (type) query.type = type;
     if (mode) query.mode = { $regex: mode, $options: 'i' };
     if (payee && !search) query.payee = { $regex: payee, $options: 'i' };
     if (needsWants) query.needsWants = needsWants;
-    
-    // Date range filtering
+
     if (startDate || endDate) {
       query.date = {};
       if (startDate) query.date.$gte = new Date(startDate);
       if (endDate) {
         const endDateTime = new Date(endDate);
-        endDateTime.setHours(23, 59, 59, 999); // End of day
+        endDateTime.setHours(23, 59, 59, 999);
         query.date.$lte = endDateTime;
       }
     }
-    
-    // Amount range filtering
+
     if (minAmount || maxAmount) {
       query.amount = {};
       if (minAmount) query.amount.$gte = Number(minAmount);
       if (maxAmount) query.amount.$lte = Number(maxAmount);
     }
-    
-    // Execute search with sorting and limits
+
     const transactions = await Transaction
       .find(query)
-      .sort({ date: -1 }) // Most recent first
+      .sort({ date: -1 })
       .limit(Number(limit));
-    
-    // Calculate summary for search results
-    const totalExpenses = transactions.reduce((sum, t) => {
-      return sum + (t.type === 'expense' || t.type === 'saved' || t.type === 'credit_card_payment' ? t.amount : 0);
-    }, 0);
-    
-    const totalIncome = transactions.reduce((sum, t) => {
-      return sum + (t.type === 'income' ? t.amount : 0);
-    }, 0);
-    
+
+    const totalExpenses = transactions.reduce((sum, t) => 
+      sum + (t.type === 'expense' || t.type === 'saved' || t.type === 'credit_card_payment' ? t.amount : 0), 0);
+
+    const totalIncome = transactions.reduce((sum, t) => 
+      sum + (t.type === 'income' ? t.amount : 0), 0);
+
     // Category breakdown
     const categoryBreakdown = {};
     const typeBreakdown = {};
-    
+
     transactions.forEach(t => {
       if (t.expenseType) {
         categoryBreakdown[t.expenseType] = (categoryBreakdown[t.expenseType] || 0) + t.amount;
       }
       typeBreakdown[t.type] = (typeBreakdown[t.type] || 0) + t.amount;
     });
-    
+
     res.json({
       transactions,
       count: transactions.length,
@@ -111,7 +119,7 @@ router.get('/search/:userId', async (req, res) => {
         latest: transactions.length ? transactions[0].date : null
       }
     });
-    
+
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -123,7 +131,7 @@ router.get('/recent/:userId', async (req, res) => {
     const { days = 30 } = req.query;
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - Number(days));
-    
+
     const transactions = await Transaction
       .find({
         user: req.params.userId,
@@ -131,16 +139,13 @@ router.get('/recent/:userId', async (req, res) => {
       })
       .sort({ date: -1 })
       .limit(50);
-    
-    // Calculate totals
-    const totalExpenses = transactions.reduce((sum, t) => {
-      return sum + (t.type === 'expense' || t.type === 'saved' || t.type === 'credit_card_payment' ? t.amount : 0);
-    }, 0);
-    
-    const totalIncome = transactions.reduce((sum, t) => {
-      return sum + (t.type === 'income' ? t.amount : 0);
-    }, 0);
-    
+
+    const totalExpenses = transactions.reduce((sum, t) => 
+      sum + (t.type === 'expense' || t.type === 'saved' || t.type === 'credit_card_payment' ? t.amount : 0), 0);
+
+    const totalIncome = transactions.reduce((sum, t) => 
+      sum + (t.type === 'income' ? t.amount : 0), 0);
+
     res.json({
       transactions,
       count: transactions.length,
@@ -158,7 +163,7 @@ router.get('/category/:userId/:category', async (req, res) => {
   try {
     const { category } = req.params;
     const { limit = 50 } = req.query;
-    
+
     const transactions = await Transaction
       .find({
         user: req.params.userId,
@@ -170,10 +175,9 @@ router.get('/category/:userId/:category', async (req, res) => {
       })
       .sort({ date: -1 })
       .limit(Number(limit));
-    
-    // Calculate totals
+
     const totalAmount = transactions.reduce((sum, t) => sum + t.amount, 0);
-    
+
     res.json({
       transactions,
       count: transactions.length,
@@ -189,11 +193,11 @@ router.get('/category/:userId/:category', async (req, res) => {
 router.get('/suggestions/:userId', async (req, res) => {
   try {
     const { field } = req.query; // payee, expenseType, mode, etc.
-    
+
     let pipeline = [
-      { $match: { user: new require('mongoose').Types.ObjectId(req.params.userId) } }
+      { $match: { user: new mongoose.Types.ObjectId(req.params.userId) } }
     ];
-    
+
     if (field === 'payee') {
       pipeline.push(
         { $group: { _id: '$payee', count: { $sum: 1 } } },
@@ -215,10 +219,10 @@ router.get('/suggestions/:userId', async (req, res) => {
         { $limit: 15 }
       );
     }
-    
+
     const results = await Transaction.aggregate(pipeline);
     const suggestions = results.map(r => r._id).filter(Boolean);
-    
+
     res.json(suggestions);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -232,11 +236,11 @@ router.get('/analytics/:userId', async (req, res) => {
     const endDate = new Date();
     const startDate = new Date();
     startDate.setMonth(startDate.getMonth() - Number(months));
-    
+
     const pipeline = [
       {
         $match: {
-          user: new require('mongoose').Types.ObjectId(req.params.userId),
+          user: new mongoose.Types.ObjectId(req.params.userId),
           date: { $gte: startDate, $lte: endDate }
         }
       },
@@ -253,14 +257,14 @@ router.get('/analytics/:userId', async (req, res) => {
       },
       { $sort: { '_id.year': 1, '_id.month': 1 } }
     ];
-    
+
     const trends = await Transaction.aggregate(pipeline);
-    
+
     // Category-wise spending
     const categoryPipeline = [
       {
         $match: {
-          user: new require('mongoose').Types.ObjectId(req.params.userId),
+          user: new mongoose.Types.ObjectId(req.params.userId),
           type: { $in: ['expense', 'saved', 'credit_card_payment'] },
           date: { $gte: startDate, $lte: endDate }
         }
@@ -275,9 +279,9 @@ router.get('/analytics/:userId', async (req, res) => {
       { $sort: { totalAmount: -1 } },
       { $limit: 10 }
     ];
-    
+
     const categorySpending = await Transaction.aggregate(categoryPipeline);
-    
+
     res.json({
       trends,
       categorySpending,
